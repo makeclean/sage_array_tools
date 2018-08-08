@@ -68,6 +68,8 @@ static clock_t cput_t = 0;
 
 //srand(time(NULL));
 
+static char program_name[5] = ".p121";
+
 /*
  *******************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -79,8 +81,10 @@ static int create_object(struct m0_uint128 id);
 static int write_data_to_object(struct m0_uint128 id, struct m0_indexvec *ext,
 				struct m0_bufvec *data, struct m0_bufvec *attr);
 
-int c0appz_catarray(int64_t idhi, int64_t idlo, int bsz, int cnt, void **arrin, int size);
-int c0appz_cparray(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idlo, int size);
+int c0appz_recieve_array(int64_t idhi, int64_t idlo, int bsz, int cnt, void **arrin, int size);
+int c0appz_send_array(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idlo, int size);
+
+int c0appz_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
 
 /*
  *******************************************************************************
@@ -88,79 +92,138 @@ int c0appz_cparray(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idlo, 
  *******************************************************************************
  */
 
-
+void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo);
+void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
 
 /* send the int array to mero */
-int c0appz_cparray_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
-    
-     int size = elements * sizeof(int); // byte size
+void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+  
+    srand(time(NULL)); // seed the rn
+		
+    c0appz_timein();
+    c0appz_setrc(program_name);
+    c0appz_putrc();
 
-    *cnt = ceil(size/(bsz*1.0));
+   /* initialize resources */
+   if (c0appz_init(0) != 0) {
+     fprintf(stderr,"error! clovis initialization failed.\n");
+   }
+   
+   int ec = c0appz_send_array_int(array,elements,bsz,cnt,idhi,idlo);
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to send array to mero\n");	
+   }
 
-    return c0appz_cparray((void *)array, bsz, *cnt, idhi, idlo, size);    
+   /* free resources*/
+   c0appz_free();
+   
+   /* time out */
+   c0appz_timeout(0);
 }
 
+/* send the int array to mero */
+int c0appz_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+    
+    int size = elements * sizeof(int); // byte size
+	
+   *cnt = ceil(size/(bsz*1.0)); // block count
+	
+    return c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
+}
+
+
 /* send the long array to mero */
-int c0appz_cparray_long(long *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+int c0appz_send_array_long(long *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
     
     int size = elements * sizeof(long); // byte size
 	
    *cnt = ceil(size/(bsz*1.0)); // block count
 	
-    return c0appz_cparray((void *)array, bsz, *cnt, idhi, idlo, size);    
+    return c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
 }
 
 /* send the float array to mero */
-int c0appz_cparray_float(float *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
-    
+int c0appz_send_array_float(float *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+    	
     int size = elements * sizeof(float); // byte size
 
    *cnt = ceil(size/(bsz*1.0)); // block count
 
-    return c0appz_cparray((void *)array, bsz, *cnt, idhi, idlo, size);    
+    return c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
 
 }
 
 /* send the double array to mero */
-int c0appz_cparray_double(double *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+int c0appz_send_array_double(double *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
     
     int size = elements * sizeof(double); // byte size of array
 
    *cnt = ceil(size/(bsz*1.0)); // block count
 
-    return c0appz_cparray((void *)array, bsz, *cnt, idhi, idlo, size);    
+    return c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
+}
+
+/* recieved the int array from mero */
+void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
+  
+    srand(time(NULL)); // seed the rn
+		
+    c0appz_timein();
+    c0appz_setrc(program_name);
+    c0appz_putrc();
+
+   /* initialize resources */
+   if (c0appz_init(0) != 0) {
+     fprintf(stderr,"error! clovis initialization failed.\n");
+   }
+   
+   int ec = c0appz_recieve_array_int(idhi,idlo,elements,bsz,cnt,arrin); 
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to receive array from mero\n");	
+   } else {
+     c0appz_rm(idhi, idlo);
+   }
+
+   /* free resources*/
+   c0appz_free();
+   
+   /* time out */
+   c0appz_timeout(0);
+
+   return;
 }
 
 /* fucntion to get the int array */
-int c0appz_catarray_int(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, int **arrin){
+int c0appz_recieve_array_int(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, int **arrin){
     
     int size = elements * sizeof(int); // calculate size of array
 
-    return c0appz_catarray(idhi, idlo, bsz, cnt, (void **) arrin, size);
+    return c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
 }
 
 /* fucntion to get the long array */
-int c0appz_catarray_long(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, long **arrin){
+int c0appz_recieve_array_long(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, long **arrin){
     
     int size = elements*sizeof(long); // calculate size of array
 
-    return c0appz_catarray(idhi, idlo, bsz, cnt, (void **) arrin, size);
+    return c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
 }
 
 /* fucntion to get the float array */
-int c0appz_catarray_float(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, float **arrin){
+int c0appz_recieve_array_float(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, float **arrin){
     
     int size = elements*sizeof(float); // calculate the size of the array
 
-    return c0appz_catarray(idhi, idlo, bsz, cnt, (void **) arrin, size);
+    return c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
 }
 
 /* fucntion to get the double array */
-int c0appz_catarray_double(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, double **arrin){
+int c0appz_recieve_array_double(int64_t idhi, int64_t idlo, int elements, int bsz, int cnt, double **arrin){
       
     int size = elements*sizeof(double); // calculate the size of the array
 
-    return c0appz_catarray(idhi, idlo, bsz, cnt, (void **) arrin, size);
+    return c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
 }
 
 /*
@@ -202,7 +265,7 @@ int c0appz_timein()
 	return 0;
 }
 
-int c0appz_catarray(int64_t idhi, int64_t idlo, int bsz, int cnt, void **arrin, int size)
+int c0appz_recieve_array(int64_t idhi, int64_t idlo, int bsz, int cnt, void **arrin, int size)
 {
 	int                  i;
 	int                  rc;
@@ -321,7 +384,7 @@ int c0appz_generate_id(int64_t *idhi, int64_t *idlo) {
  * c0appz_cp()
  * copy to an object.
  */
-int c0appz_cparray(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idlo, int size)
+int c0appz_send_array(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idlo, int size)
 {
 	int                i;
 	int                rc;
@@ -448,7 +511,7 @@ int c0cp_file(char *filename, int bsz, int cnt){
 	return -1;
 
 
-    int ret = c0appz_cparray(data, bsz, cnt, idhi, idlo, cnt*bsz);
+    int ret = c0appz_send_array(data, bsz, cnt, idhi, idlo, cnt*bsz);
     
     if(ret==0)
        printf("Written %d bytes to mero object %ld %ld\n", bsz*cnt, (long) *idhi, (long) *idlo);
