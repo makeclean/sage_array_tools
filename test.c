@@ -12,11 +12,15 @@
 
 void test_integer(int bsz); // test_integer
 void test_float(int bsz);
+void test_high_level_int(int bsz);
 
 /* main */
 int main(int argc, char **argv) {
 
    int bsz = 4096;
+   
+   test_high_level_int(bsz);
+   return 0;
 
    srand(time(NULL));
 
@@ -125,5 +129,32 @@ void test_float(int bsz) {
      free(arr2);
    }
    printf("=== end of float array tests ===\n");
+   return;
+}
+
+/* */
+void test_high_level_int(int bsz) {
+
+  mero_start();
+   int cnt;
+   int64_t idhi,idlo;
+   int elements = 10000;
+   int *array = (int*) malloc (elements*sizeof(elements));
+   for ( int i = 0 ; i < elements ; i++ ) {
+     array[i] = i;
+   }
+   mero_send_array_int(array,elements,bsz,&cnt,&idhi,&idlo);
+   printf("send succesfully\n");
+   
+   int *array_recieved; // array to recieve
+   printf("high level test %i %i %i %i %i",elements,bsz,cnt, elements*sizeof(int), bsz*cnt);
+   mero_recieve_array_int(&array_recieved,elements,bsz,cnt,idhi,idlo);
+
+   for ( int i = 0 ; i < elements ; i++ ) {
+     if(array[i] != array_recieved[i]) {
+       printf("no match\n");
+     }
+   }
+   mero_finish();
    return;
 }

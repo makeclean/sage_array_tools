@@ -92,12 +92,13 @@ int c0appz_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *
  *******************************************************************************
  */
 
+void mero_start();
+void mero_finish();
 void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo);
 void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
 
-/* send the int array to mero */
-void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
-  
+void mero_start() {
+
     srand(time(NULL)); // seed the rn
 		
     c0appz_timein();
@@ -108,17 +109,28 @@ void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *i
    if (c0appz_init(0) != 0) {
      fprintf(stderr,"error! clovis initialization failed.\n");
    }
-   
-   int ec = c0appz_send_array_int(array,elements,bsz,cnt,idhi,idlo);
-   if( ec != 0 ) {
-     fprintf(stderr,"error! failed to send array to mero\n");	
-   }
 
+  return;
+}
+
+void mero_finish() {
    /* free resources*/
    c0appz_free();
    
    /* time out */
    c0appz_timeout(0);
+   return;
+}
+
+/* send the int array to mero */
+void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+  
+   int ec = c0appz_send_array_int(array,elements,bsz,cnt,idhi,idlo);
+   printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(int), bsz*(*cnt));
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to send array to mero\n");	
+   }
 }
 
 /* send the int array to mero */
@@ -165,31 +177,17 @@ int c0appz_send_array_double(double *array, int elements, int bsz, int *cnt, int
 
 /* recieved the int array from mero */
 void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
-  
-    srand(time(NULL)); // seed the rn
-		
-    c0appz_timein();
-    c0appz_setrc(program_name);
-    c0appz_putrc();
+  		
+   printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(int), bsz*cnt);
 
-   /* initialize resources */
-   if (c0appz_init(0) != 0) {
-     fprintf(stderr,"error! clovis initialization failed.\n");
-   }
-   
-   int ec = c0appz_recieve_array_int(idhi,idlo,elements,bsz,cnt,arrin); 
+   int ec = 0;
+   ec = c0appz_recieve_array_int(idhi,idlo,elements,bsz,cnt,arrin); 
 
    if( ec != 0 ) {
      fprintf(stderr,"error! failed to receive array from mero\n");	
    } else {
      c0appz_rm(idhi, idlo);
    }
-
-   /* free resources*/
-   c0appz_free();
-   
-   /* time out */
-   c0appz_timeout(0);
 
    return;
 }
