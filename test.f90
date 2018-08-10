@@ -18,7 +18,7 @@ module mero_fortran
           block_count, idhi, idlo ) bind(C)
        use iso_c_binding
        implicit none
-       integer(kind=C_INT),intent(inout),dimension(array_length) :: array_recieved 
+       type(C_PTR) :: array_recieved 
        integer(kind=C_INT),value :: array_length
        integer(kind=C_INT),value :: block_size
        integer(kind=C_INT),value :: block_count
@@ -26,22 +26,6 @@ module mero_fortran
        integer(kind=C_INT64_T),value :: idlo
      end subroutine recieve_array_int
      
-     subroutine recieve_array_int_f(array_struct, array_length, block_size, &
-          block_count, idhi, idlo ) bind(C)
-       use iso_c_binding
-       implicit none
-       type, bind(c) :: pass
-         integer(kind=C_INT) :: lenc,lenf
-         type(C_PTR) :: c_array,f_array
-       end type pass
-       type(pass),intent(inout) :: array_struct
-       integer(kind=C_INT),value :: array_length
-       integer(kind=C_INT),value :: block_size
-       integer(kind=C_INT),value :: block_count
-       integer(kind=C_INT64_T),value :: idhi
-       integer(kind=C_INT64_T),value :: idlo
-     end subroutine recieve_array_int_f
- 
      subroutine start_clovis() bind(C)
      end subroutine start_clovis 
 
@@ -73,15 +57,14 @@ use iso_c_binding
 implicit none
 
 integer(kind=C_INT), allocatable :: array(:) ! the array to fill
-!type(kind=C_PTR), allocatable,target :: array(:)
-integer, allocatable, target :: array_recieved(:) ! the array to fill
+type(C_PTR) :: p
+integer(C_INT), pointer :: array_recieved(:)
 integer :: i                     ! generic loop varable
 integer(C_INT) :: array_size            ! the size of the array
 integer(C_INT) :: block_size            ! size of mero block to use
 integer(C_INT) :: block_count                 ! the block count
 integer(C_INT64_T) :: idhi                  ! id hi
 integer(C_INT64_T) :: idlo                  ! id lo
-
 procedure(send_array_int) :: mero_send_array_int
 procedure(recieve_array_int) :: mero_recieve_array_int
 
@@ -90,16 +73,20 @@ block_size = 4096
 allocate(array(100))
 allocate(array_recieved(100))
 array = 1.
+do i = 1,100
+  array(i) = i
+enddo
 array_recieved = 0.
 write(*,*) '!FORTRAN!', size(array),block_size,block_count,idhi,idlo
 call mero_send_array_int(array,size(array),block_size,block_count,idhi,idlo)
 write(*,*) '!FORTRAN!',size(array),block_size,block_count,idhi,idlo
-call mero_recieve_array_int(array_recieved, size(array), block_size, block_count, idhi, idlo)
-
+call mero_recieve_array_int(p, size(array), block_size, block_count, idhi, idlo)
+call C_F_POINTER(p,array_recieved, [size(array)])
 do i = 1, size(array)
    if ( array(i) .ne. array_recieved(i) ) then
       write(*,*) 'Arrays not he same', array(i), array_recieved(i)
    endif
+   write(*,*) array(i),array_recieved(i)
 enddo
 
 deallocate(array)
