@@ -126,7 +126,9 @@ void mero_finish() {
 void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
   
    int ec = c0appz_send_array_int(array,elements,bsz,cnt,idhi,idlo);
-   printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(int), bsz*(*cnt));
+   #ifdef DEBUG
+     printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(int), bsz*(*cnt));
+   #endif
 
    if( ec != 0 ) {
      fprintf(stderr,"error! failed to send array to mero\n");	
@@ -142,7 +144,6 @@ int c0appz_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *
 	
     return c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
 }
-
 
 /* send the long array to mero */
 int c0appz_send_array_long(long *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
@@ -178,7 +179,9 @@ int c0appz_send_array_double(double *array, int elements, int bsz, int *cnt, int
 /* recieved the int array from mero */
 void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
   		
-   printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(int), bsz*cnt);
+   #ifdef DEBUG
+     printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(int), bsz*cnt);
+   #endif
 
    int ec = 0;
    ec = c0appz_recieve_array_int(idhi,idlo,elements,bsz,cnt,arrin); 
@@ -399,8 +402,9 @@ int c0appz_send_array(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idl
         
 
         c0appz_generate_id(idhi, idlo);
-        
-        printf("== Fgen called %ld %ld\n", (long)(*idhi), (long)(*idlo));
+        #ifdef DEBUG
+          printf("== Fgen called %ld %ld\n", (long)(*idhi), (long)(*idlo));
+        #endif
 
         //*idhi = 0;
         //*idlo = 1048577;
