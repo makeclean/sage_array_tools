@@ -94,8 +94,13 @@ int c0appz_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *
 
 void mero_start();
 void mero_finish();
+/* recieve an integery array */
 void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo);
+/* send an integer array */
 void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
+
+void mero_recieve_array_float(float **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo);
+void mero_send_array_float(float *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
 
 void mero_start() {
 
@@ -133,6 +138,49 @@ void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *i
    if( ec != 0 ) {
      fprintf(stderr,"error! failed to send array to mero\n");	
    }
+   return;
+}
+
+/* send the long array to mero */
+void mero_send_array_long(long *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+  
+   int ec = c0appz_send_array_long(array,elements,bsz,cnt,idhi,idlo);
+   #ifdef DEBUG
+     printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(long), bsz*(*cnt));
+   #endif
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to send array to mero\n");	
+   }
+   return;
+}
+
+/* send the float array to mero */
+void mero_send_array_float(float *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+  
+   int ec = c0appz_send_array_float(array,elements,bsz,cnt,idhi,idlo);
+   #ifdef DEBUG
+     printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(float), bsz*(*cnt));
+   #endif
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to send array to mero\n");	
+   }
+   return;
+}
+
+/* send the double array to mero */
+void mero_send_array_double(double *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+  
+   int ec = c0appz_send_array_double(array,elements,bsz,cnt,idhi,idlo);
+   #ifdef DEBUG
+     printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(double), bsz*(*cnt));
+   #endif
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to send array to mero\n");	
+   }
+   return;
 }
 
 /* send the int array to mero */
@@ -185,6 +233,63 @@ void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t
 
    int ec = 0;
    ec = c0appz_recieve_array_int(idhi,idlo,elements,bsz,cnt,arrin); 
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to receive array from mero\n");	
+   } else {
+     c0appz_rm(idhi, idlo);
+   }
+
+   return;
+}
+
+/* recieved the long array from mero */
+void mero_recieve_array_long(long **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
+  		
+   #ifdef DEBUG
+     printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(long), bsz*cnt);
+   #endif
+
+   int ec = 0;
+   ec = c0appz_recieve_array_long(idhi,idlo,elements,bsz,cnt,arrin); 
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to receive array from mero\n");	
+   } else {
+     c0appz_rm(idhi, idlo);
+   }
+
+   return;
+}
+
+/* recieved the float array from mero */
+void mero_recieve_array_float(float **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
+  		
+   #ifdef DEBUG
+     printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(float), bsz*cnt);
+   #endif
+
+   int ec = 0;
+   ec = c0appz_recieve_array_float(idhi,idlo,elements,bsz,cnt,arrin); 
+
+   if( ec != 0 ) {
+     fprintf(stderr,"error! failed to receive array from mero\n");	
+   } else {
+     c0appz_rm(idhi, idlo);
+   }
+
+   return;
+}
+
+/* recieved the double array from mero */
+void mero_recieve_array_double(double **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
+  		
+   #ifdef DEBUG
+     printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(double), bsz*cnt);
+   #endif
+
+   int ec = 0;
+   ec = c0appz_recieve_array_double(idhi,idlo,elements,bsz,cnt,arrin); 
 
    if( ec != 0 ) {
      fprintf(stderr,"error! failed to receive array from mero\n");	

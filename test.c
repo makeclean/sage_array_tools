@@ -12,14 +12,22 @@
 
 void test_integer(int bsz); // test_integer
 void test_float(int bsz);
+
 void test_high_level_int(int bsz);
+void test_high_level_long(int bsz);
+void test_high_level_float(int bsz);
+void test_high_level_double(int bsz);
 
 /* main */
 int main(int argc, char **argv) {
 
    int bsz = 4096;
-   
+   mero_start();
    test_high_level_int(bsz);
+   test_high_level_long(bsz);
+   test_high_level_float(bsz);
+   test_high_level_double(bsz);
+   mero_finish();
    return 0;
 
    srand(time(NULL));
@@ -132,10 +140,10 @@ void test_float(int bsz) {
    return;
 }
 
-/* */
+/* test of integer array send */
 void test_high_level_int(int bsz) {
 
-  mero_start();
+  //  mero_start();
    int cnt;
    int64_t idhi,idlo;
    int elements = 10000;
@@ -147,7 +155,7 @@ void test_high_level_int(int bsz) {
    printf("send succesfully\n");
    
    int *array_recieved; // array to recieve
-   printf("high level test %i %i %i %i %i",elements,bsz,cnt, elements*sizeof(int), bsz*cnt);
+   printf("high level test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(int), bsz*cnt);
    mero_recieve_array_int(&array_recieved,elements,bsz,cnt,idhi,idlo);
 
    for ( int i = 0 ; i < elements ; i++ ) {
@@ -155,6 +163,90 @@ void test_high_level_int(int bsz) {
        printf("no match\n");
      }
    }
-   mero_finish();
+   printf("test successful\n");
+   //mero_finish();
+   return;
+}
+
+/* test of long array send */
+void test_high_level_long(int bsz) {
+
+  //mero_start();
+   int cnt;
+   int64_t idhi,idlo;
+   int elements = 10000;
+   long *array = (long*) malloc (elements*sizeof(long));
+   for ( int i = 0 ; i < elements ; i++ ) {
+     array[i] = (long)i;
+   }
+   mero_send_array_long(array,elements,bsz,&cnt,&idhi,&idlo);
+   printf("send succesfully\n");
+   
+   long *array_recieved; // array to recieve
+   printf("high level test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(long), bsz*cnt);
+   mero_recieve_array_long(&array_recieved,elements,bsz,cnt,idhi,idlo);
+
+   for ( int i = 0 ; i < elements ; i++ ) {
+     if(array[i] != array_recieved[i]) {
+       printf("no match\n");
+     }
+   }
+   printf("test successful\n");
+   //mero_finish();
+   return;
+}
+
+/* test of float array send */
+void test_high_level_float(int bsz) {
+
+  //mero_start();
+   int cnt;
+   int64_t idhi,idlo;
+   int elements = 10000;
+   float *array = (float*) malloc (elements*sizeof(float));
+   for ( int i = 0 ; i < elements ; i++ ) {
+     array[i] = (float)i;
+   }
+   mero_send_array_float(array,elements,bsz,&cnt,&idhi,&idlo);
+   printf("send succesfully\n");
+   
+   float *array_recieved; // array to recieve
+   printf("high level test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(float), bsz*cnt);
+   mero_recieve_array_float(&array_recieved,elements,bsz,cnt,idhi,idlo);
+
+   for ( int i = 0 ; i < elements ; i++ ) {
+     if(array[i] != array_recieved[i]) {
+       printf("no match\n");
+     }
+   }
+   printf("test succesful\n");
+   //mero_finish();
+   return;
+}
+
+/* test of double array send */
+void test_high_level_double(int bsz) {
+
+  //mero_start();
+   int cnt;
+   int64_t idhi,idlo;
+   int elements = 10000;
+   double *array = (double*) malloc (elements*sizeof(double));
+   for ( int i = 0 ; i < elements ; i++ ) {
+     array[i] = (double)i;
+   }
+   mero_send_array_double(array,elements,bsz,&cnt,&idhi,&idlo);
+   printf("send succesfully\n");
+   
+   double *array_recieved; // array to recieve
+   printf("high level test %i %i %i %i %i",elements,bsz,cnt, elements*sizeof(double), bsz*cnt);
+   mero_recieve_array_double(&array_recieved,elements,bsz,cnt,idhi,idlo);
+
+   for ( int i = 0 ; i < elements ; i++ ) {
+     if(array[i] != array_recieved[i]) {
+       printf("no match\n");
+     }
+   }
+   //   mero_finish();
    return;
 }
