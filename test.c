@@ -8,7 +8,7 @@
 #include <math.h>
 #include <time.h>
 #include <unistd.h>
-#include "c0appz.h"
+#include "c0appz_op.h"
 
 void test_integer(int bsz); // test_integer
 void test_float(int bsz);

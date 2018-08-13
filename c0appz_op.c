@@ -27,80 +27,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <math.h>
-#include "c0appz.h"
+//#include "c0appz.h"
 
-#include "clovis/clovis.h"
-#include "clovis/clovis_idx.h"
-
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-
-/* from http://stackoverflow.com/questions/3437404/min-and-max-in-c */
-
-#define MAX(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
-
-#define MIN(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
-
-#define MAXC0RC   	4
-#define SZC0RCSTR  	256
-#define SZC0RCFILE 	256
-#define C0RCFLE 	"./.cappzrc"
-#define CLOVIS_MAX_BLOCK_COUNT (200)
-
-/* static variables */
-static struct m0_clovis          *clovis_instance = NULL;
-static struct m0_clovis_container clovis_container;
-static struct m0_clovis_realm     clovis_uber_realm;
-static struct m0_clovis_config    clovis_conf;
-static struct m0_idx_dix_config   dix_conf;
-
-static char c0rc[8][SZC0RCSTR];
-static char c0rcfile[SZC0RCFILE] = C0RCFLE;
-static struct timeval wclk_t = {0, 0};
-static clock_t cput_t = 0;
-
-//srand(time(NULL));
-
-static char program_name[5] = ".p121";
-
-/*
- *******************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *******************************************************************************
- */
-static char *trim(char *str);
-static int open_entity(struct m0_clovis_entity *entity);
-static int create_object(struct m0_uint128 id);
-static int write_data_to_object(struct m0_uint128 id, struct m0_indexvec *ext,
-				struct m0_bufvec *data, struct m0_bufvec *attr);
-
-int c0appz_recieve_array(int64_t idhi, int64_t idlo, int bsz, int cnt, void **arrin, int size);
-int c0appz_send_array(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idlo, int size);
-
-int c0appz_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
-
-/*
- *******************************************************************************
- * EXTERN FUNCTIONS
- *******************************************************************************
- */
-
-void mero_start();
-void mero_finish();
-/* recieve an integery array */
-void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo);
-/* send an integer array */
-void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
-
-void mero_recieve_array_float(float **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo);
-void mero_send_array_float(float *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo);
+#include "c0appz_op.h"
 
 void mero_start() {
 
@@ -129,25 +58,36 @@ void mero_finish() {
 
 /* send the int array to mero */
 void mero_send_array_int(int *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
-  
-   int ec = c0appz_send_array_int(array,elements,bsz,cnt,idhi,idlo);
-   #ifdef DEBUG
+
+   #if ( DEBUG > 0 ) 
      printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(int), bsz*(*cnt));
    #endif
+  
+   int size = elements * sizeof(int); // byte size
+	
+   *cnt = ceil(size/(bsz*1.0)); // block count
+	
+   int ec = c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
 
    if( ec != 0 ) {
      fprintf(stderr,"error! failed to send array to mero\n");	
    }
+
    return;
 }
 
 /* send the long array to mero */
 void mero_send_array_long(long *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
-  
-   int ec = c0appz_send_array_long(array,elements,bsz,cnt,idhi,idlo);
-   #ifdef DEBUG
+
+    int size = elements * sizeof(long); // byte size
+	
+   *cnt = ceil(size/(bsz*1.0)); // block count
+	
+    int ec = c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
+
+    #if ( DEBUG > 0 ) 
      printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(long), bsz*(*cnt));
-   #endif
+    #endif
 
    if( ec != 0 ) {
      fprintf(stderr,"error! failed to send array to mero\n");	
@@ -158,9 +98,14 @@ void mero_send_array_long(long *array, int elements, int bsz, int *cnt, int64_t 
 /* send the float array to mero */
 void mero_send_array_float(float *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
   
-   int ec = c0appz_send_array_float(array,elements,bsz,cnt,idhi,idlo);
-   #ifdef DEBUG
-     printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(float), bsz*(*cnt));
+    int size = elements * sizeof(float); // byte size
+
+   *cnt = ceil(size/(bsz*1.0)); // block count
+
+    int ec = c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
+
+    #if ( DEBUG > 0 ) 
+      printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(float), bsz*(*cnt));
    #endif
 
    if( ec != 0 ) {
@@ -171,9 +116,14 @@ void mero_send_array_float(float *array, int elements, int bsz, int *cnt, int64_
 
 /* send the double array to mero */
 void mero_send_array_double(double *array, int elements, int bsz, int *cnt, int64_t *idhi, int64_t *idlo){
+
+    int size = elements * sizeof(double); // byte size of array
+
+   *cnt = ceil(size/(bsz*1.0)); // block count
+
+    int ec = c0appz_send_array((void *)array, bsz, *cnt, idhi, idlo, size);    
   
-   int ec = c0appz_send_array_double(array,elements,bsz,cnt,idhi,idlo);
-   #ifdef DEBUG
+    #if ( DEBUG > 0 ) 
      printf("mero_send test %i %i %i %i %i\n",elements,bsz,*cnt, elements*sizeof(double), bsz*(*cnt));
    #endif
 
@@ -227,12 +177,15 @@ int c0appz_send_array_double(double *array, int elements, int bsz, int *cnt, int
 /* recieved the int array from mero */
 void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
   		
-   #ifdef DEBUG
+   #if ( DEBUG > 0 ) 
      printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(int), bsz*cnt);
    #endif
 
    int ec = 0;
-   ec = c0appz_recieve_array_int(idhi,idlo,elements,bsz,cnt,arrin); 
+
+   int size = elements * sizeof(int); // calculate size of array
+
+   ec = c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
 
    if( ec != 0 ) {
      fprintf(stderr,"error! failed to receive array from mero\n");	
@@ -246,18 +199,19 @@ void mero_recieve_array_int(int **arrin, int elements, int bsz, int cnt, int64_t
 /* recieved the long array from mero */
 void mero_recieve_array_long(long **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
   		
-   #ifdef DEBUG
+    #if (DEBUG > 0 ) 
      printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(long), bsz*cnt);
-   #endif
+    #endif
 
-   int ec = 0;
-   ec = c0appz_recieve_array_long(idhi,idlo,elements,bsz,cnt,arrin); 
+    int size = elements*sizeof(long); // calculate size of array
 
-   if( ec != 0 ) {
-     fprintf(stderr,"error! failed to receive array from mero\n");	
-   } else {
-     c0appz_rm(idhi, idlo);
-   }
+    int ec = c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
+    
+    if( ec != 0 ) {
+      fprintf(stderr,"error! failed to receive array from mero\n");	
+    } else {
+      c0appz_rm(idhi, idlo);
+    }
 
    return;
 }
@@ -265,18 +219,19 @@ void mero_recieve_array_long(long **arrin, int elements, int bsz, int cnt, int64
 /* recieved the float array from mero */
 void mero_recieve_array_float(float **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
   		
-   #ifdef DEBUG
+   #if ( DEBUG > 1 ) 
      printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(float), bsz*cnt);
    #endif
 
-   int ec = 0;
-   ec = c0appz_recieve_array_float(idhi,idlo,elements,bsz,cnt,arrin); 
+    int size = elements*sizeof(float); // calculate the size of the array
 
-   if( ec != 0 ) {
-     fprintf(stderr,"error! failed to receive array from mero\n");	
-   } else {
-     c0appz_rm(idhi, idlo);
-   }
+    int ec = c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
+
+    if( ec != 0 ) {
+      fprintf(stderr,"error! failed to receive array from mero\n");	
+    } else {
+      c0appz_rm(idhi, idlo);
+    }
 
    return;
 }
@@ -284,18 +239,19 @@ void mero_recieve_array_float(float **arrin, int elements, int bsz, int cnt, int
 /* recieved the double array from mero */
 void mero_recieve_array_double(double **arrin, int elements, int bsz, int cnt, int64_t idhi, int64_t idlo){
   		
-   #ifdef DEBUG
+   #if ( DEBUG > 0 )
      printf("mero_recieve test %i %i %i %i %i\n",elements,bsz,cnt, elements*sizeof(double), bsz*cnt);
    #endif
 
-   int ec = 0;
-   ec = c0appz_recieve_array_double(idhi,idlo,elements,bsz,cnt,arrin); 
+    int size = elements*sizeof(double); // calculate the size of the array
 
-   if( ec != 0 ) {
-     fprintf(stderr,"error! failed to receive array from mero\n");	
-   } else {
-     c0appz_rm(idhi, idlo);
-   }
+    int ec = c0appz_recieve_array(idhi, idlo, bsz, cnt, (void **) arrin, size);
+
+    if( ec != 0 ) {
+      fprintf(stderr,"error! failed to receive array from mero\n");	
+    } else {
+      c0appz_rm(idhi, idlo);
+    }
 
    return;
 }
@@ -507,7 +463,7 @@ int c0appz_send_array(void *array, int bsz, int cnt, int64_t *idhi, int64_t *idl
         
 
         c0appz_generate_id(idhi, idlo);
-        #ifdef DEBUG
+        #if ( DEBUG > 0 )
           printf("== Fgen called %ld %ld\n", (long)(*idhi), (long)(*idlo));
         #endif
 

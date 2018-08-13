@@ -44,11 +44,10 @@ NODE = $(shell eval uname -n)
 #valid block sizes are: 4KB ~ 32MB
 #4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 
 #1048576, 2097152, 4194304, 8388608, 16777216, 33554432    
-BSZ = 8192
-CNT = 32
 
 #compilar/linker options
 LFLAGS += -lm -lpthread -lrt -lgf_complete -lyaml -luuid -lmero
+MERO_LFLAGS = "-Wl,-rpath,." -L/$(shell pwd) -lmeroarray 
 CFLAGS += -D_REENTRANT -D_GNU_SOURCE -DM0_INTERNAL='' -DM0_EXTERN=extern
 CFLAGS += -fno-common 
 #CFLAGS += -Wall -Werror
@@ -56,18 +55,32 @@ CFLAGS +=  -Wno-attributes -fno-strict-aliasing
 CFLAGS += -fno-omit-frame-pointer -g -O2 -Wno-unused-but-set-variable 
 CFLAGS += -rdynamic 
 
-all: array 
 
-array:
-	gcc c0appz_op.c test.c -I/usr/include/mero $(CFLAGS) $(LFLAGS) -o test
+all: libmeroarray.so test_c test_f
 
-array-lib:
-	gcc $(CFLAGS) -fPIC -shared -o libclovisarray.so c0appz_op.c -I/usr/include/mero $(LFLAGS) 
+test_c:  libmeroarray.so
+	gcc test.c -I/usr/include/mero $(CFLAGS) $(LFLAGS) $(MERO_LFLAGS) -o test_c
 
+test_f:  libmeroarray.so
+	gfortran test.f90 $(MERO_LFLAGS) -o test_f
 
-test: array array-lib
-	$(SUDO) ./test 
+libmeroarray.so:
+	gcc $(CFLAGS) -fPIC -shared -o libmeroarray.so c0appz_op.c -I/usr/include/mero $(LFLAGS) 
 
+TEST = test1 test2
+
+test: ${TEST}
+
+test1:  test_c
+	$(SUDO) ./test_c
+
+test2:  test_f
+	$(SUDO) ./test_f
+
+test: test_c test_f
 
 clean:
-	rm -f test libclovisarray.so
+	rm -f test_c test_f libmeroarray.so
+
+.PHONY: clean test ${TEST}
+
